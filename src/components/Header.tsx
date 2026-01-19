@@ -42,7 +42,7 @@ export function Header() {
     },
   ];
   const activeTab =
-    tabs.find((tab) => pathname.startsWith(tab.href))?.key || "inicio";
+    tabs.find((tab) => tab.href === location.pathname)?.key || "/Inicio";
 
   return (
     <header className="flex max-sm:flex-row items-center justify-between md:px-16 max-sm:px-4 py-8 w-full">
