@@ -72,7 +72,7 @@ export default function ResetSenhaPage() {
           )}
 
           <div className="flex items-center justify-between gap-3">
-            <Link to="/Login" className="text-sm underline">
+            <Link to="/login" className="text-sm underline">
               Voltar ao login
             </Link>
 

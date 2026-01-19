@@ -73,7 +73,7 @@ export default function LoginPage() {
             <>
               Não tem uma conta?{" "}
               <Link
-                to="/Cadastro"
+                to="/cadastro"
                 className="font-medium text-blue-600 hover:underline"
               >
                 Criar conta

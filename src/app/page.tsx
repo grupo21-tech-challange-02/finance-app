@@ -48,7 +48,7 @@ export default function Home() {
 
           <div className="gap-4 w-full pb-8">
             <div className="flex items-center gap-4 max-sm:flex-col max-sm:w-full">
-              <Link to="/Cadastro" className="w-4xs max-sm:w-full">
+              <Link to="/cadastro" className="w-4xs max-sm:w-full">
                 <Button className="w-4xs max-sm:w-full">Começar Grátis</Button>
               </Link>
             </div>
@@ -232,12 +232,12 @@ export default function Home() {
         </Text>
 
         <div className="flex items-center gap-4 max-sm:flex-col max-sm:w-full">
-          <Link to="/Cadastro">
+          <Link to="/cadastro">
             <Button className="w-xsm bg-white text-black max-sm:w-full">
               Criar Conta Grátis
             </Button>
           </Link>
-          <Link to="/Login">
+          <Link to="/login">
             <Button className="max-sm:w-full">Fazer Login</Button>
           </Link>
         </div>

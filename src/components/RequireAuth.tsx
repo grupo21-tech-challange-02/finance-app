@@ -18,7 +18,7 @@ export default function RequireAuth({
 
   useEffect(() => {
     if (user === null) {
-      navigate(`/Login?next=${encodeURIComponent(pathname)}`, { replace: true });
+      navigate(`/login?next=${encodeURIComponent(pathname)}`, { replace: true });
     }
   }, [user, navigate, pathname]);
 

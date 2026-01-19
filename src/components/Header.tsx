@@ -13,14 +13,14 @@ export function Header() {
   const location = useLocation();
   const pathname = location.pathname
 
-  const hide = pathname.startsWith("/Login") || pathname.startsWith("/Cadastro");
+  const hide = pathname.startsWith("/login") || pathname.startsWith("/cadastro");
 
   if (hide) return null;
 
   async function handleLogout() {
     try {
       await logoutUser();
-      navigate("/Login");
+      navigate("/login");
     } catch (err) {
       console.error("Erro ao fazer logout:", err);
     }
