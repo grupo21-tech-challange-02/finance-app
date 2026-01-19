@@ -35,7 +35,7 @@ export default function AnalisesClient() {
   }, [period.year, period.month]);
 
   return (
-    <div className="p-8">
+    <div className="p-16 h-full">
       <header className="flex items-center justify-between">
         <PageHeading
           title="Análises"
