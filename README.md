@@ -1,5 +1,9 @@
 O finance-app é um Single-spa Parcel que representa a aplicação contendo Landing Page, Autenticação, Trasações e Análises. O site em produção pode ser acessado em: https://d1vqzf4765g06r.cloudfront.net/
 
+### 🧑‍💻 Usuário que usei para os testes:
+- user: a@b.com
+- senha: 123456
+
 ### 🏃‍♂️ Passo a passo para executar localmente:
 
 Instalar dependências:
