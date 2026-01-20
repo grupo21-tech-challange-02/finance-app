@@ -7,7 +7,7 @@ import {
   type TxCursor,
 } from "@/services/transactions";
 import { Card } from "./Card";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { RiArrowRightDownLine, RiArrowRightUpLine } from "react-icons/ri";
 import Modal, { ModalHandle } from "./Modal";
 import TransactionDetailsModal, {
@@ -18,6 +18,7 @@ import TransactionForm from "./TransactionForm";
 import Button from "./Button";
 
 import { useAppSelector } from "@/store/hooks";
+import CreateTransactionModal from "./CreateTransactionModal";
 
 const PAGE_SIZE = 20;
 
@@ -29,7 +30,7 @@ function norm(s: string) {
     .trim();
 }
 
-export function TransactionsTable() {
+function TransactionsTable({ transactionTableRef }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -39,6 +40,7 @@ export function TransactionsTable() {
   const [pageIndex, setPageIndex] = useState(0);
 
   const editRef = useRef<ModalHandle>(null);
+  const createModalRef = useRef<ModalHandle>(null);
   const detailsRef = useRef<TransactionDetailsHandle>(null);
 
   const { period, type, category, search } = useAppSelector((s) => s.filters);
@@ -51,6 +53,10 @@ export function TransactionsTable() {
       }),
     []
   );
+
+  const openCreateModal = () => {
+    createModalRef.current?.open();
+  }
 
   const openView = (t: Transaction) => detailsRef.current?.open(t);
 
@@ -65,8 +71,13 @@ export function TransactionsTable() {
   }
 
   function handleSaved(saved: Transaction) {
-    editRef.current?.close();
-    setEditing(null);
+    if (editing) {
+      editRef.current?.close();
+      setEditing(null);
+    } else {
+      createModalRef.current?.close();
+    }
+
 
     setTransactions((prev) => {
       const idx = prev.findIndex((t) => t.id === saved.id);
@@ -79,6 +90,10 @@ export function TransactionsTable() {
       return [saved, ...prev].slice(0, PAGE_SIZE);
     });
   }
+
+  useImperativeHandle(transactionTableRef, () => ({
+    openCreateModal
+  }))
 
   const loadPage = useCallback(async (cursor: TxCursor | null) => {
     setLoading(true);
@@ -212,13 +227,12 @@ export function TransactionsTable() {
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className={`px-4 py-2 border-b border-gray-200 ${
-                        col.align === "right"
-                          ? "text-right"
-                          : col.align === "center"
+                      className={`px-4 py-2 border-b border-gray-200 ${col.align === "right"
+                        ? "text-right"
+                        : col.align === "center"
                           ? "text-center"
                           : ""
-                      }`}
+                        }`}
                     >
                       {col.label}
                     </th>
@@ -343,6 +357,14 @@ export function TransactionsTable() {
           <p>Nenhuma transação selecionada.</p>
         )}
       </Modal>
+
+      <CreateTransactionModal
+        createModalRef={createModalRef}
+        closeModal={createModalRef.current?.close()}
+        handleSaved={handleSaved}
+      />
     </>
   );
 }
+
+export default forwardRef(TransactionsTable)
