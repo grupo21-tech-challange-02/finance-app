@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import type { Transaction } from "@/services/transactions";
 import Modal, { type ModalHandle } from "./Modal";
 import Button from "./Button";
-import { FiFileText, FiCalendar, FiTag, FiHash } from "react-icons/fi";
+import { FiFileText, FiCalendar, FiTag, FiHash, FiPaperclip, FiExternalLink } from "react-icons/fi";
 
 export interface TransactionDetailsHandle {
   open: (tx: Transaction) => void;
@@ -119,6 +119,40 @@ const TransactionDetailsModal = forwardRef<TransactionDetailsHandle, Props>(
             </div>
             <div className="mt-1 break-all text-slate-700">{tx?.id}</div>
           </div>
+
+          {tx?.attachment && (
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                <FiPaperclip /> <span>Anexo</span>
+              </div>
+              <div className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                {tx.attachment.type.startsWith("image/") ? (
+                  <img
+                    src={tx.attachment.data}
+                    alt="Anexo"
+                    className="h-12 w-12 rounded object-cover"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded bg-slate-200">
+                    <FiFileText className="h-6 w-6 text-slate-500" />
+                  </div>
+                )}
+                <div className="flex-1 overflow-hidden">
+                  <p className="truncate text-sm font-medium text-slate-700">
+                    {tx.attachment.name}
+                  </p>
+                  <a
+                    href={tx.attachment.data}
+                    download={tx.attachment.name}
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    <FiExternalLink className="h-3 w-3" />
+                    Baixar anexo
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-xl bg-slate-50 p-4 border border-gray-400">
             <div className="grid grid-cols-2 gap-4 text-sm">
