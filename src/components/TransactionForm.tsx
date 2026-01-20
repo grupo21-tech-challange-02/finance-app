@@ -2,14 +2,20 @@
 
 import {
   addTransaction,
+  AttachmentData,
   Transaction,
   TransactionCategory,
   TransactionType,
   updateTransaction,
 } from "@/services/transactions";
+import {
+  uploadTransactionAttachment,
+  deleteTransactionAttachment,
+} from "@/services/storage";
 import { useEffect, useMemo, useState } from "react";
 import FormField from "./FormField";
 import Button from "./Button";
+import FileUpload, { type FileUploadData } from "./FileUpload";
 
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -129,6 +135,8 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
   const isEdit = !!initial;
 
   const [serverError, setServerError] = useState<string | null>(null);
+  const [fileData, setFileData] = useState<FileUploadData | null>(null);
+  const [removeExistingAttachment, setRemoveExistingAttachment] = useState(false);
 
   const {
     register,
@@ -198,6 +206,8 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
         valueMasked: absMasked,
       });
       setServerError(null);
+      setFileData(null);
+      setRemoveExistingAttachment(false);
     } else {
       reset({
         type: "deposito",
@@ -207,6 +217,8 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
         valueMasked: "0,00",
       });
       setServerError(null);
+      setFileData(null);
+      setRemoveExistingAttachment(false);
     }
   }, [initial, reset]);
 
@@ -236,27 +248,65 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
       const value =
         data.type === "deposito" ? Math.abs(parsed) : -Math.abs(parsed);
 
-      const payload = {
-        type: data.type,
-        category: data.category,
-        description: data.description || "",
-        value,
-        date: parseISODateToLocalDate(data.dateStr),
-      };
-
       const uid = auth.currentUser?.uid;
       if (!uid) throw new Error("Usuário não autenticado.");
 
+      let attachment: AttachmentData | null | undefined;
+
       if (isEdit && initial) {
+        if (removeExistingAttachment && initial.attachment?.path) {
+          try {
+            await deleteTransactionAttachment(initial.attachment.path);
+          } catch {
+          }
+          attachment = null;
+        }
+
+        if (fileData?.file) {
+          if (initial.attachment?.path && !removeExistingAttachment) {
+            try {
+              await deleteTransactionAttachment(initial.attachment.path);
+            } catch {
+            }
+          }
+          const uploaded = await uploadTransactionAttachment(initial.id, fileData.file);
+          attachment = uploaded;
+        }
+
+        const payload = {
+          type: data.type,
+          category: data.category,
+          description: data.description || "",
+          value,
+          date: parseISODateToLocalDate(data.dateStr),
+          ...(attachment !== undefined ? { attachment } : {}),
+        };
+
         await updateTransaction(initial.id, payload);
 
         onSaved?.({
           ...initial,
           ...payload,
           uid,
+          attachment: attachment !== undefined ? attachment : initial.attachment,
         });
       } else {
+
+        const payload = {
+          type: data.type,
+          category: data.category,
+          description: data.description || "",
+          value,
+          date: parseISODateToLocalDate(data.dateStr),
+        };
+
         const id = await addTransaction(payload);
+
+
+        if (fileData?.file) {
+          attachment = await uploadTransactionAttachment(id, fileData.file);
+          await updateTransaction(id, { attachment });
+        }
 
         onSaved?.({
           id,
@@ -267,6 +317,7 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
           value: payload.value,
           date: payload.date,
           createdAt: new Date(),
+          attachment: attachment || null,
         });
       }
     } catch (err: unknown) {
@@ -346,6 +397,19 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
           error={errors.dateStr?.message}
           max={getTodayLocalISODate()}
           {...register("dateStr")}
+        />
+
+        <FileUpload
+          value={fileData}
+          existingUrl={
+            !removeExistingAttachment ? initial?.attachment?.url : null
+          }
+          existingName={
+            !removeExistingAttachment ? initial?.attachment?.name : null
+          }
+          onChange={setFileData}
+          onRemoveExisting={() => setRemoveExistingAttachment(true)}
+          disabled={isSubmitting}
         />
       </div>
 

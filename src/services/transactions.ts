@@ -30,12 +30,22 @@ export type TransactionCategory =
   | "investimento"
   | "utilidades";
 
+export type AttachmentData = {
+  path: string;
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: Date;
+};
+
 export type TransactionInput = {
   type: TransactionType;
   value: number;
   description: string;
   category: TransactionCategory;
   date?: Date;
+  attachment?: AttachmentData | null;
 };
 
 export type Transaction = TransactionInput & {
@@ -43,6 +53,16 @@ export type Transaction = TransactionInput & {
   uid: string;
   date: Date;
   createdAt?: Date;
+  attachment?: AttachmentData | null;
+};
+
+type AttachmentDoc = {
+  path: string;
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: Timestamp;
 };
 
 type TransactionDoc = {
@@ -53,6 +73,7 @@ type TransactionDoc = {
   category: TransactionCategory;
   date: Timestamp;
   createdAt?: Timestamp;
+  attachment?: AttachmentDoc | null;
 };
 
 function requireUid(): string {
@@ -63,6 +84,18 @@ function requireUid(): string {
 
 function colRef(uid: string) {
   return collection(db, "users", uid, "transactions");
+}
+
+function mapAttachment(att?: AttachmentDoc | null): AttachmentData | null {
+  if (!att) return null;
+  return {
+    path: att.path,
+    url: att.url,
+    name: att.name,
+    type: att.type,
+    size: att.size,
+    uploadedAt: att.uploadedAt.toDate(),
+  };
 }
 
 function mapDocToTransaction(
@@ -79,6 +112,7 @@ function mapDocToTransaction(
     category: data.category,
     date: data.date.toDate(),
     createdAt: data.createdAt ? data.createdAt.toDate() : undefined,
+    attachment: mapAttachment(data.attachment),
   };
 }
 
@@ -93,6 +127,16 @@ export async function addTransaction(input: TransactionInput): Promise<string> {
     category: input.category,
     date: Timestamp.fromDate(input.date ?? new Date()),
     createdAt: Timestamp.now(),
+    attachment: input.attachment
+      ? {
+          path: input.attachment.path,
+          url: input.attachment.url,
+          name: input.attachment.name,
+          type: input.attachment.type,
+          size: input.attachment.size,
+          uploadedAt: Timestamp.fromDate(input.attachment.uploadedAt),
+        }
+      : null,
   };
 
   const ref = await addDoc(colRef(uid), payload);
@@ -113,6 +157,20 @@ export async function updateTransaction(
       : {}),
     ...(patch.category !== undefined ? { category: patch.category } : {}),
     ...(patch.date ? { date: Timestamp.fromDate(patch.date) } : {}),
+    ...(patch.attachment !== undefined
+      ? {
+          attachment: patch.attachment
+            ? {
+                path: patch.attachment.path,
+                url: patch.attachment.url,
+                name: patch.attachment.name,
+                type: patch.attachment.type,
+                size: patch.attachment.size,
+                uploadedAt: Timestamp.fromDate(patch.attachment.uploadedAt),
+              }
+            : null,
+        }
+      : {}),
   };
 
   await updateDoc(doc(db, "users", uid, "transactions", id), updatePayload);
@@ -139,6 +197,7 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
     category: data.category,
     date: data.date.toDate(),
     createdAt: data.createdAt ? data.createdAt.toDate() : undefined,
+    attachment: mapAttachment(data.attachment),
   };
 }
 
@@ -252,15 +311,7 @@ export function onAllTransactions(cb: (items: Transaction[]) => void) {
 export type TxCursor = QueryDocumentSnapshot<DocumentData>;
 
 function mapTxDoc(d: QueryDocumentSnapshot<DocumentData>): Transaction {
-  const data = d.data() as {
-    uid: string;
-    type: TransactionType;
-    value: number;
-    description: string;
-    category: TransactionCategory;
-    date: Timestamp;
-    createdAt?: Timestamp;
-  };
+  const data = d.data() as TransactionDoc;
 
   return {
     id: d.id,
@@ -271,6 +322,7 @@ function mapTxDoc(d: QueryDocumentSnapshot<DocumentData>): Transaction {
     category: data.category,
     date: data.date.toDate(),
     createdAt: data.createdAt ? data.createdAt.toDate() : undefined,
+    attachment: mapAttachment(data.attachment),
   };
 }
 
