@@ -8,7 +8,7 @@ O finance-app é um Single-spa Parcel que representa a aplicação contendo Land
 
 --- 
 
-### 🐳 Para executar localmente com docker, siga esses passos: [Docker Compose](https://github.com/grupo21-tech-challange-02/docker-compose)
+#### 🐳 Para executar localmente com docker, siga esses passos: [Docker Compose](https://github.com/grupo21-tech-challange-02/docker-compose)
 
 ---
 
