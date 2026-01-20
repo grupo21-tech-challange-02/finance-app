@@ -8,10 +8,7 @@ import {
   TransactionType,
   updateTransaction,
 } from "@/services/transactions";
-import {
-  uploadTransactionAttachment,
-  deleteTransactionAttachment,
-} from "@/services/storage";
+import { fileToAttachment } from "@/services/storage";
 import { useEffect, useMemo, useState } from "react";
 import FormField from "./FormField";
 import Button from "./Button";
@@ -253,26 +250,13 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
 
       let attachment: AttachmentData | null | undefined;
 
+      if (fileData?.file) {
+        attachment = await fileToAttachment(fileData.file);
+      } else if (removeExistingAttachment) {
+        attachment = null;
+      }
+
       if (isEdit && initial) {
-        if (removeExistingAttachment && initial.attachment?.path) {
-          try {
-            await deleteTransactionAttachment(initial.attachment.path);
-          } catch {
-          }
-          attachment = null;
-        }
-
-        if (fileData?.file) {
-          if (initial.attachment?.path && !removeExistingAttachment) {
-            try {
-              await deleteTransactionAttachment(initial.attachment.path);
-            } catch {
-            }
-          }
-          const uploaded = await uploadTransactionAttachment(initial.id, fileData.file);
-          attachment = uploaded;
-        }
-
         const payload = {
           type: data.type,
           category: data.category,
@@ -291,22 +275,16 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
           attachment: attachment !== undefined ? attachment : initial.attachment,
         });
       } else {
-
         const payload = {
           type: data.type,
           category: data.category,
           description: data.description || "",
           value,
           date: parseISODateToLocalDate(data.dateStr),
+          attachment: attachment || null,
         };
 
         const id = await addTransaction(payload);
-
-
-        if (fileData?.file) {
-          attachment = await uploadTransactionAttachment(id, fileData.file);
-          await updateTransaction(id, { attachment });
-        }
 
         onSaved?.({
           id,
@@ -401,11 +379,14 @@ export default function TransactionForm({ initial, onSaved, onCancel }: Props) {
 
         <FileUpload
           value={fileData}
-          existingUrl={
-            !removeExistingAttachment ? initial?.attachment?.url : null
+          existingData={
+            !removeExistingAttachment ? initial?.attachment?.data : null
           }
           existingName={
             !removeExistingAttachment ? initial?.attachment?.name : null
+          }
+          existingType={
+            !removeExistingAttachment ? initial?.attachment?.type : null
           }
           onChange={setFileData}
           onRemoveExisting={() => setRemoveExistingAttachment(true)}

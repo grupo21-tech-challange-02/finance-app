@@ -1,67 +1,46 @@
 "use client";
 
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { auth, storage } from "./firebase";
-
 export type AttachmentInfo = {
-  path: string;
-  url: string;
+  data: string; // base64 data URL
   name: string;
   type: string;
   size: number;
   uploadedAt: Date;
 };
 
-function requireUid(): string {
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Usuário não autenticado.");
-  return uid;
+const MAX_FILE_SIZE = 700 * 1024; // 700KB limit for Firestore
+
+export function validateFileSize(file: File): boolean {
+  return file.size <= MAX_FILE_SIZE;
 }
 
-function generateFileName(originalName: string): string {
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 8);
-  const extension = originalName.split(".").pop() || "";
-  const baseName = originalName.replace(/\.[^/.]+$/, "").substring(0, 50);
-  return `${baseName}_${timestamp}_${randomStr}.${extension}`;
+export function getMaxFileSizeKB(): number {
+  return MAX_FILE_SIZE / 1024;
 }
 
-export async function uploadTransactionAttachment(
-  transactionId: string,
-  file: File
-): Promise<AttachmentInfo> {
-  const uid = requireUid();
-  const fileName = generateFileName(file.name);
-  const filePath = `users/${uid}/transactions/${transactionId}/${fileName}`;
-  const storageRef = ref(storage, filePath);
+export async function fileToAttachment(file: File): Promise<AttachmentInfo> {
+  if (!validateFileSize(file)) {
+    throw new Error(`Arquivo muito grande. Máximo: ${getMaxFileSizeKB()}KB`);
+  }
 
-  await uploadBytes(storageRef, file, {
-    contentType: file.type,
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const data = reader.result as string;
+      resolve({
+        data,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        uploadedAt: new Date(),
+      });
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Erro ao ler arquivo"));
+    };
+
+    reader.readAsDataURL(file);
   });
-
-  const url = await getDownloadURL(storageRef);
-
-  return {
-    path: filePath,
-    url,
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    uploadedAt: new Date(),
-  };
-}
-
-export async function deleteTransactionAttachment(path: string): Promise<void> {
-  const storageRef = ref(storage, path);
-  await deleteObject(storageRef);
-}
-
-export async function getAttachmentUrl(path: string): Promise<string> {
-  const storageRef = ref(storage, path);
-  return getDownloadURL(storageRef);
 }

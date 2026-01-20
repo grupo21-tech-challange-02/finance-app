@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { FiUpload, FiX, FiFile, FiImage } from "react-icons/fi";
 import { cn } from "@/lib/utils";
+import { getMaxFileSizeKB } from "@/services/storage";
 
 export type FileUploadData = {
   file: File;
@@ -11,12 +12,12 @@ export type FileUploadData = {
 
 type Props = {
   value?: FileUploadData | null;
-  existingUrl?: string | null;
+  existingData?: string | null;
   existingName?: string | null;
+  existingType?: string | null;
   onChange: (data: FileUploadData | null) => void;
   onRemoveExisting?: () => void;
   accept?: string;
-  maxSizeMB?: number;
   label?: string;
   error?: string;
   disabled?: boolean;
@@ -32,18 +33,18 @@ function formatFileSize(bytes: number): string {
   return `${nfBytes.format(bytes / (1024 * 1024))} MB`;
 }
 
-function isImageFile(type: string): boolean {
-  return type.startsWith("image/");
+function isImageType(type: string | null | undefined): boolean {
+  return type?.startsWith("image/") ?? false;
 }
 
 export default function FileUpload({
   value,
-  existingUrl,
+  existingData,
   existingName,
+  existingType,
   onChange,
   onRemoveExisting,
   accept = "image/*,.pdf,.doc,.docx",
-  maxSizeMB = 5,
   label = "Anexo",
   error,
   disabled = false,
@@ -52,24 +53,29 @@ export default function FileUpload({
   const [dragActive, setDragActive] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  const maxSizeKB = getMaxFileSizeKB();
+  const maxSizeBytes = maxSizeKB * 1024;
 
   function handleFile(file: File) {
     setLocalError(null);
 
     if (file.size > maxSizeBytes) {
-      setLocalError(`Arquivo muito grande. Máximo: ${maxSizeMB}MB`);
+      setLocalError(`Arquivo muito grande. Máximo: ${maxSizeKB}KB`);
       return;
     }
 
-    const isImage = isImageFile(file.type);
-    let preview: string | undefined;
+    const isImage = isImageType(file.type);
 
     if (isImage) {
-      preview = URL.createObjectURL(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const preview = e.target?.result as string;
+        onChange({ file, preview });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      onChange({ file, preview: undefined });
     }
-
-    onChange({ file, preview });
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -106,9 +112,6 @@ export default function FileUpload({
   }
 
   function handleRemove() {
-    if (value?.preview) {
-      URL.revokeObjectURL(value.preview);
-    }
     onChange(null);
     setLocalError(null);
   }
@@ -119,7 +122,7 @@ export default function FileUpload({
 
   const displayError = error || localError;
   const hasNewFile = !!value;
-  const hasExisting = !!existingUrl && !hasNewFile;
+  const hasExisting = !!existingData && !hasNewFile;
 
   return (
     <div className="space-y-2">
@@ -154,7 +157,7 @@ export default function FileUpload({
               ou arraste um arquivo
             </div>
             <p className="text-xs text-slate-500">
-              Imagens, PDF ou documentos (máx. {maxSizeMB}MB)
+              Imagens, PDF ou documentos (máx. {maxSizeKB}KB)
             </p>
           </div>
         </div>
@@ -195,9 +198,9 @@ export default function FileUpload({
 
       {hasExisting && (
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          {existingUrl && isImageFile(existingName || "") ? (
+          {isImageType(existingType) ? (
             <img
-              src={existingUrl}
+              src={existingData!}
               alt="Anexo"
               className="h-12 w-12 rounded object-cover"
             />
@@ -215,12 +218,11 @@ export default function FileUpload({
               {existingName || "Anexo"}
             </p>
             <a
-              href={existingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={existingData!}
+              download={existingName || "anexo"}
               className="text-xs text-blue-600 hover:underline"
             >
-              Visualizar
+              Baixar
             </a>
           </div>
           {onRemoveExisting && (

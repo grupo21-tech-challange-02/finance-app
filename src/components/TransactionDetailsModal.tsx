@@ -128,7 +128,7 @@ const TransactionDetailsModal = forwardRef<TransactionDetailsHandle, Props>(
               <div className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 {tx.attachment.type.startsWith("image/") ? (
                   <img
-                    src={tx.attachment.url}
+                    src={tx.attachment.data}
                     alt="Anexo"
                     className="h-12 w-12 rounded object-cover"
                   />
@@ -142,13 +142,12 @@ const TransactionDetailsModal = forwardRef<TransactionDetailsHandle, Props>(
                     {tx.attachment.name}
                   </p>
                   <a
-                    href={tx.attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={tx.attachment.data}
+                    download={tx.attachment.name}
                     className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
                   >
                     <FiExternalLink className="h-3 w-3" />
-                    Abrir anexo
+                    Baixar anexo
                   </a>
                 </div>
               </div>

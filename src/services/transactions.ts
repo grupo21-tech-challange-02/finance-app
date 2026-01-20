@@ -31,8 +31,7 @@ export type TransactionCategory =
   | "utilidades";
 
 export type AttachmentData = {
-  path: string;
-  url: string;
+  data: string; // base64 data URL
   name: string;
   type: string;
   size: number;
@@ -57,8 +56,7 @@ export type Transaction = TransactionInput & {
 };
 
 type AttachmentDoc = {
-  path: string;
-  url: string;
+  data: string;
   name: string;
   type: string;
   size: number;
@@ -89,8 +87,7 @@ function colRef(uid: string) {
 function mapAttachment(att?: AttachmentDoc | null): AttachmentData | null {
   if (!att) return null;
   return {
-    path: att.path,
-    url: att.url,
+    data: att.data,
     name: att.name,
     type: att.type,
     size: att.size,
@@ -129,8 +126,7 @@ export async function addTransaction(input: TransactionInput): Promise<string> {
     createdAt: Timestamp.now(),
     attachment: input.attachment
       ? {
-          path: input.attachment.path,
-          url: input.attachment.url,
+          data: input.attachment.data,
           name: input.attachment.name,
           type: input.attachment.type,
           size: input.attachment.size,
@@ -161,8 +157,7 @@ export async function updateTransaction(
       ? {
           attachment: patch.attachment
             ? {
-                path: patch.attachment.path,
-                url: patch.attachment.url,
+                data: patch.attachment.data,
                 name: patch.attachment.name,
                 type: patch.attachment.type,
                 size: patch.attachment.size,
